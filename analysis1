@@ -1,0 +1,63 @@
+import numpy as np
+import pandas as pd
+import plotnine as pn
+import matplotlib.pyplot as plt
+from scipy.stats import f_oneway
+import scipy.stats as stats
+
+df = pd.read_csv("AkpsiMasterSpreadsheet.csv").dropna()
+#Compare participation across graduate years/Newer Member Participation Vs. Older 
+
+df2 = df[ df['Grade'] == "Junior/Senior" ].index
+df = df.drop(df2)
+
+#Ratio of Active Seniors to All Sohpomores
+Seniors = df[df['Grade'].str.contains("Senior")]
+goodSeniors = Seniors[Seniors['Good Standing'].str.contains("Yes")]
+ratioSeniors = len(goodSeniors)/len(Seniors)
+SeniorsPointTotal = Seniors['Points Goal']
+
+Juniors = df[df['Grade'].str.contains("Junior")]
+goodJuniors = Juniors[Juniors['Good Standing'].str.contains("Yes")]
+ratioJuniors = len(goodJuniors)/len(Juniors)
+
+Sophomores = df[df['Grade'].str.contains("Sophomore")]
+goodSophomores = Sophomores[Sophomores['Good Standing'].str.contains("Yes")]
+ratioSophomores= len(goodSophomores)/len(Sophomores)
+
+result = pd.concat([goodJuniors, goodSophomores, goodSeniors], axis=0)
+x = result.boxplot(by="Grade",column=["Points Goal"], grid=False)
+x.set_ylabel("Average Participation Points of Brothers")
+print(x)
+smPointsToList = goodSophomores['Points Goal'].to_list()
+jPointsToList = goodJuniors['Points Goal'].to_list()
+srPointsToList = goodSeniors['Points Goal'].to_list()
+oneWayAnova = f_oneway(smPointsToList,jPointsToList,srPointsToList )
+#normality = stats.shapiro(result.resid)
+#p > 0.05, Significant Difference in Means
+print("ANOVA ONE WAY:" + str(oneWayAnova))
+
+#Days Of the Week / # of Participants Across Multiple Semesters
+SundayEvent = df[df['DOW Event'].str.contains("Sunday")]
+df["Points Earned"] = df["Points Earned"].astype(str)
+df = df[~df["Points Earned"].str.contains("0")]
+df = df[~df["Event"].str.contains("Chapter")]
+
+SundayEvent = df[df['DOW Event'].str.contains("Sunday")]
+MondayEvent = df[df['DOW Event'].str.contains("Monday")]
+TuesdayEvent = df[df['DOW Event'].str.contains("Tuesday")]
+WednesdayEvent = df[df['DOW Event'].str.contains("Wednesday")]
+ThursdayEvent = df[df['DOW Event'].str.contains("Thursday")]
+FridayEvent = df[df['DOW Event'].str.contains("Friday")]
+SaturdayEvent=df[df['DOW Event'].str.contains("Saturday")]
+weeklyEvents = [SundayEvent, MondayEvent, TuesdayEvent, WednesdayEvent, ThursdayEvent, FridayEvent, SaturdayEvent]
+numParticipants = []
+for i in weeklyEvents:
+    numParticipants.append(len(i))
+#print(numParticipants)
+dfResults = pd.DataFrame({'lab':['Sun', 'Mon', 'Tues', 'Wed', "Thurs","Fri", "Sat"], 'val':numParticipants})
+ax = dfResults.plot.bar(x='lab', y='val', rot=0)
+ax.set_xlabel("Day of week")
+ax.set_ylabel("# of Event Participants")
+
+#df = pd.DataFrame({'lab':['A', 'B', 'C'], 'val':[10, 30, 20]})
